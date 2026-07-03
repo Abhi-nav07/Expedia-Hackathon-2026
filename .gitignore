@@ -1,0 +1,55 @@
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Node
+node_modules/
+.next/
+out/
+frontend/.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+backend/.pytest_cache/
+backend/htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Database
+*.sqlite3
+pgdata/
+
+# Docker
+docker/volumes/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build
+dist/
+build/
+
+# Secrets (defense in depth — never commit these regardless of name)
+*secret*
+*.pem
+*.key
+!frontend/**/*.key.tsx

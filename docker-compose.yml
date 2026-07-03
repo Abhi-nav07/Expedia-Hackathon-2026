@@ -1,0 +1,91 @@
+name: expedia-hackathon-2026
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hackathon_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hackathon_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_LOCAL_ONLY}
+      POSTGRES_DB: ${POSTGRES_DB:-hackathon_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hackathon_user} -d ${POSTGRES_DB:-hackathon_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hackathon_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: hackathon_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hackathon_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hackathon_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-hackathon_user}:${POSTGRES_PASSWORD:-CHANGE_ME_LOCAL_ONLY}@db:5432/${POSTGRES_DB:-hackathon_db}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hackathon_net
+    # Non-root user is set in the Dockerfile (USER appuser)
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hackathon_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - hackathon_net
+
+networks:
+  hackathon_net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
