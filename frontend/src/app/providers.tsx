@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect, type ReactNode } from "react";
 
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { bootstrapAuth } from "@/lib/api/client";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -31,7 +33,10 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <TooltipProvider delayDuration={200}>
+          {children}
+          <Toaster position="bottom-right" richColors closeButton />
+        </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
