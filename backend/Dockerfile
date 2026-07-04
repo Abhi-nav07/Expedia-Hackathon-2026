@@ -7,15 +7,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System deps needed to build psycopg2 / argon2-cffi wheels
+# gcc is kept for argon2-cffi's C extension build; curl for the healthcheck.
+# libpq-dev intentionally omitted — not needed while SQLite is the active
+# driver. If you uncomment asyncpg/psycopg2-binary in requirements.txt to
+# move to PostgreSQL/Supabase, add `libpq-dev` back to this apt-get line.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev curl \
+    && apt-get install -y --no-install-recommends gcc curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# SQLite data directory, owned by the non-root app user
+RUN mkdir -p /app/data
 
 # Security: run as non-root user
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser \

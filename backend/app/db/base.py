@@ -4,13 +4,19 @@ Declarative base and reusable model mixins.
 Every ORM model in the platform should inherit from Base and, where
 applicable, the mixins below — this keeps timestamp/soft-delete/PK
 conventions consistent across every future table without repeating code.
+
+NOTE: UUIDPrimaryKeyMixin uses app.db.types.GUID rather than
+sqlalchemy.dialects.postgresql.UUID directly — this is what makes models
+portable between SQLite (current) and PostgreSQL/Supabase (future) with
+no code changes. See app/db/types.py for details.
 """
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from app.db.types import GUID
 
 
 class Base(DeclarativeBase):
@@ -20,10 +26,12 @@ class Base(DeclarativeBase):
 
 class UUIDPrimaryKeyMixin:
     """UUID primary keys instead of sequential ints: avoids enumeration
-    attacks on public-facing resource IDs (e.g. /bookings/1, /bookings/2)."""
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    attacks on public-facing resource IDs (e.g. /bookings/1, /bookings/2).
+
+    Portable across backends via GUID — native UUID on PostgreSQL/Supabase,
+    CHAR(36) on SQLite.
+    """
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
 
 
 class TimestampMixin:

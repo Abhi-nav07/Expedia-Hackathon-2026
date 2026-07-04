@@ -4,6 +4,13 @@ Centralized application configuration.
 All environment-dependent values must be read through this module.
 Never call os.getenv() directly elsewhere in the codebase — this keeps
 configuration auditable and prevents secrets from leaking into random files.
+
+DATABASE PORTABILITY: DATABASE_URL / DATABASE_URL_SYNC default to a local
+SQLite file, which is all a hackathon needs — no DB container, no waiting
+on Postgres to become healthy. To move to PostgreSQL or Supabase later,
+only these two values change (in .env); nothing else in the codebase
+references a specific database backend. See app/db/session.py and
+app/db/types.py for the two places that branch on dialect.
 """
 from functools import lru_cache
 from typing import List, Literal
@@ -32,8 +39,11 @@ class Settings(BaseSettings):
     BACKEND_PORT: int = 8000
 
     # --- Database ---
-    DATABASE_URL: str
-    DATABASE_URL_SYNC: str
+    # Default: local SQLite file under ./data/. Swap to a PostgreSQL or
+    # Supabase connection string here (or via .env) with no other code
+    # changes required.
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/app.db"
+    DATABASE_URL_SYNC: str = "sqlite:///./data/app.db"
 
     # --- Redis ---
     REDIS_URL: str = "redis://redis:6379/0"
@@ -87,6 +97,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    @property
+    def is_sqlite(self) -> bool:
+        return self.DATABASE_URL.startswith("sqlite")
 
 
 @lru_cache

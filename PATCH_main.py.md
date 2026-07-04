@@ -1,35 +1,44 @@
-# Patch for backend/app/main.py (from Module 2)
+# Patch for backend/app/main.py
 
-Apply these two changes to the existing `main.py`:
-
---------------------------------------------------------------------------
-1. Add the import, alongside the existing health import:
-
-    from app.api.v1.routers import health
-    from app.api.v1.routers import auth          # <-- add this line
+Two small additions needed to fully wire up SQLite.
 
 --------------------------------------------------------------------------
-2. Replace this block:
+1. Add these imports near the top, with the other app imports:
 
-    # --- Routers ---
-    app.include_router(health.router)
-    app.include_router(health.router, prefix=settings.API_V1_PREFIX)
-    # Future routers (auth, users, etc.) register here as they're built,
-    # e.g.: app.include_router(auth.router, prefix=settings.API_V1_PREFIX + "/auth", tags=["Auth"])
+    from pathlib import Path
+
+    from app.db.session import enable_sqlite_foreign_keys
+
+--------------------------------------------------------------------------
+2. Update the `lifespan` function to ensure the SQLite data directory
+   exists and foreign keys are enabled before the app starts serving
+   requests. Replace:
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        logger.info("app_startup", env=settings.APP_ENV, debug=settings.APP_DEBUG)
+        yield
+        logger.info("app_shutdown")
 
    with:
 
-    # --- Routers ---
-    app.include_router(health.router)
-    app.include_router(health.router, prefix=settings.API_V1_PREFIX)
-    app.include_router(
-        auth.router,
-        prefix=settings.API_V1_PREFIX + "/auth",
-        tags=["Auth"],
-    )
-    # Future routers (users, hotels, flights, etc.) register here as they're built.
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if settings.is_sqlite:
+            # sqlite+aiosqlite:///./data/app.db -> ensure ./data exists
+            db_path = settings.DATABASE_URL.split("///")[-1]
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            await enable_sqlite_foreign_keys()
+
+        logger.info(
+            "app_startup",
+            env=settings.APP_ENV,
+            debug=settings.APP_DEBUG,
+            database=settings.DATABASE_URL.split("://")[0],
+        )
+        yield
+        logger.info("app_shutdown")
 
 --------------------------------------------------------------------------
-No other changes to main.py are needed — CORS, rate limiting, security
-headers, and exception handling from Module 2 already cover the new
-/auth/* routes automatically since they're applied at the app level.
+No other changes needed. This combines with the auth router patch from
+Module 3 (PATCH_main.py.md) — apply both to the same file.
