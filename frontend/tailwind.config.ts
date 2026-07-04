@@ -15,9 +15,16 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        // Wired to the next/font variable set in app/layout.tsx
+        // (--font-inter). Keeping this as a variable, not a hardcoded
+        // font-family string, means swapping fonts later is a one-line
+        // change in layout.tsx only.
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+      },
       colors: {
-        // CSS-variable-backed tokens — actual values defined in globals.css
-        // during Phase 2 (Design System). Kept as extension points here.
+        // CSS-variable-backed tokens — actual values defined in
+        // app/globals.css. Palette finalized in the Theme System module.
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -34,6 +41,14 @@ const config: Config = {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -53,6 +68,14 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      transitionDuration: {
+        // Mirrors lib/motion/variants.ts's DURATION tokens, so
+        // CSS-only transitions (hover states, etc.) and Framer Motion
+        // animations feel like the same design system rather than two.
+        fast: "150ms",
+        base: "250ms",
+        slow: "400ms",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -62,10 +85,15 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.25s ease-out",
       },
     },
   },

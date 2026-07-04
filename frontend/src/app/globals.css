@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 /*
- * Baseline design tokens.
- *
- * This is intentionally a neutral, functional palette — just enough for
- * every component to render correctly without unstyled/broken states.
- * The Theme System module (08) is responsible for the actual brand
- * palette, typography scale, spacing scale, and the dark-mode toggle UI;
- * it will extend or replace these values, not introduce a new mechanism.
+ * Design tokens — brand palette finalized here (Theme System module).
+ * Module 05 (Frontend Foundation) intentionally shipped a generic
+ * placeholder palette just so nothing rendered unstyled; this file
+ * replaces those values with an actual considered choice: a sky/teal
+ * primary evoking travel & aviation without committing to any single
+ * airline or OTA's specific brand color (kept generic on purpose, since
+ * the hackathon problem statement isn't known yet).
  */
 @layer base {
   :root {
@@ -19,7 +19,7 @@
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
 
-    --primary: 221 83% 53%;
+    --primary: 199 89% 48%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96%;
@@ -28,28 +28,34 @@
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 189 94% 43%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --ring: 199 89% 48%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 222 47% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 14%;
+    --card: 222 47% 12%;
     --card-foreground: 210 40% 98%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 199 89% 58%;
+    --primary-foreground: 222 47% 8%;
 
     --secondary: 217 33% 20%;
     --secondary-foreground: 210 40% 98%;
@@ -57,15 +63,21 @@
     --muted: 217 33% 20%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 217 33% 20%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 189 84% 45%;
+    --accent-foreground: 222 47% 8%;
 
     --destructive: 0 63% 40%;
     --destructive-foreground: 210 40% 98%;
 
+    --success: 142 60% 40%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 80% 45%;
+    --warning-foreground: 210 40% 98%;
+
     --border: 217 33% 24%;
     --input: 217 33% 24%;
-    --ring: 217 91% 60%;
+    --ring: 199 89% 58%;
   }
 }
 
@@ -75,5 +87,17 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Utility for content that should always sit above modals/toasts,
+   defined once here rather than as a magic z-index scattered per
+   component. Component Library module should reuse this. */
+@layer utilities {
+  .z-overlay {
+    z-index: 50;
+  }
+  .z-toast {
+    z-index: 100;
   }
 }
