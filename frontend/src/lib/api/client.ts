@@ -63,17 +63,22 @@ async function refreshAccessToken(): Promise<string | null> {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, skipAuthRetry, headers, ...rest } = options;
   const accessToken = useAuthStore.getState().accessToken;
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
   const doFetch = (token: string | null) =>
     fetch(`${API_BASE_URL}${path}`, {
       ...rest,
       credentials: "include", // sends the httpOnly refresh cookie when needed
       headers: {
-        "Content-Type": "application/json",
+        // FormData bodies must NOT have a Content-Type set manually —
+        // the browser sets it (including the multipart boundary) when
+        // the body is a FormData instance. Setting it ourselves breaks
+        // the upload silently (missing boundary).
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
     });
 
   let response = await doFetch(accessToken);
@@ -124,6 +129,12 @@ export const apiClient = {
 
   delete: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "DELETE" }),
+
+  /** Convenience alias for uploading a FormData body (e.g. avatar upload).
+   * Functionally identical to `post` — FormData handling is automatic in
+   * `request()` — this just makes call sites read more clearly. */
+  upload: <T>(path: string, formData: FormData, options?: RequestOptions) =>
+    request<T>(path, { ...options, method: "POST", body: formData }),
 };
 
 /**

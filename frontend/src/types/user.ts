@@ -5,6 +5,14 @@
  * If a future module adds one (e.g. openapi-typescript), this file
  * becomes generated rather than hand-written — the shape should stay
  * identical either way.
+ *
+ * NOTE: avatar_url was added in Module 11 to match Module 10's backend
+ * addition (UserRead.avatar_url) — this file had drifted out of sync
+ * with the backend schema since Module 5 first wrote it, caught only
+ * when Module 11 actually tried to display an avatar and hit a type
+ * error. Worth remembering: any future backend schema change needs the
+ * matching edit here too, since nothing currently enforces this
+ * automatically.
  */
 
 export type UserRole = "user" | "admin" | "partner";
@@ -16,6 +24,7 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   is_email_verified: boolean;
+  avatar_url: string | null;
 }
 
 export interface TokenResponse {

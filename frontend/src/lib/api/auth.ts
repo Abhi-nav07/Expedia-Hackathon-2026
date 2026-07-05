@@ -12,6 +12,24 @@ export interface RegisterPayload {
   full_name: string;
 }
 
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  new_password: string;
+}
+
+export interface VerifyEmailPayload {
+  token: string;
+}
+
 export const authApi = {
   login: (payload: LoginPayload) =>
     apiClient.post<TokenResponse>("/auth/login", payload),
@@ -22,4 +40,19 @@ export const authApi = {
   me: () => apiClient.get<User>("/auth/me"),
 
   logout: () => apiClient.post<void>("/auth/logout"),
+
+  changePassword: (payload: ChangePasswordPayload) =>
+    apiClient.post<void>("/auth/change-password", payload),
+
+  forgotPassword: (payload: ForgotPasswordPayload) =>
+    apiClient.post<{ message: string }>("/auth/forgot-password", payload),
+
+  resetPassword: (payload: ResetPasswordPayload) =>
+    apiClient.post<void>("/auth/reset-password", payload),
+
+  resendVerification: () =>
+    apiClient.post<{ message: string }>("/auth/resend-verification"),
+
+  verifyEmail: (payload: VerifyEmailPayload) =>
+    apiClient.post<void>("/auth/verify-email", payload),
 };

@@ -4,7 +4,7 @@ import { LogOut, Settings, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,42 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "@/components/ui/toaster";
-import { authApi } from "@/lib/api/auth";
-import { ApiError } from "@/lib/api/client";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { useAuthStore } from "@/store/auth-store";
-
-function getInitials(name: string | undefined): string {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
-  return (first + last).toUpperCase();
-}
+import { useCurrentUser, useLogout } from "@/hooks/use-auth";
+import { resolveAvatarUrl } from "@/lib/utils/backend-origin";
+import { getInitialsFromName } from "@/lib/utils/initials";
 
 export function Navbar() {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } catch (err) {
-      // Logout is best-effort server-side (see backend auth router's
-      // comment on token revocation being a future extension point) —
-      // proceed with clearing client state regardless of the API result,
-      // since the user's intent to log out should always succeed locally.
-      if (err instanceof ApiError) {
-        console.warn("Logout API call failed, clearing local session anyway", err.code);
-      }
-    } finally {
-      clearAuth();
-      toast.success("Signed out");
-      router.push("/login");
-    }
-  };
+  const { data: user } = useCurrentUser();
+  const logout = useLogout();
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-6">
@@ -66,7 +39,8 @@ export function Navbar() {
               aria-label="Open user menu"
             >
               <Avatar className="h-8 w-8">
-                <AvatarFallback>{getInitials(user?.full_name)}</AvatarFallback>
+                <AvatarImage src={resolveAvatarUrl(user?.avatar_url)} alt={user?.full_name ?? ""} />
+                <AvatarFallback>{getInitialsFromName(user?.full_name)}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
@@ -87,7 +61,7 @@ export function Navbar() {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onSelect={handleLogout}>
+            <DropdownMenuItem destructive onSelect={() => logout.mutate()}>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
