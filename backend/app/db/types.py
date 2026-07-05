@@ -20,6 +20,7 @@ SQLite -> PostgreSQL/Supabase swap actually safe with zero code changes,
 at the minor cost of not using Postgres' native UUID indexing.
 """
 import uuid
+from datetime import timezone
 
 from sqlalchemy.types import CHAR, TypeDecorator
 
@@ -44,3 +45,29 @@ class GUID(TypeDecorator):
         if isinstance(value, uuid.UUID):
             return value
         return uuid.UUID(value)
+
+
+def ensure_utc(dt):
+    """
+    Normalizes a datetime loaded from the DB to be timezone-aware (UTC).
+
+    Cross-dialect gotcha: PostgreSQL/Supabase preserve tzinfo on a
+    `DateTime(timezone=True)` column round-trip; SQLite does NOT — it
+    silently returns a naive datetime even though the column was declared
+    timezone-aware. Every value this app ever writes to such a column is
+    already UTC (see TimestampMixin, User.locked_until), so a naive value
+    read back can be safely assumed to be UTC and re-attached with
+    tzinfo. Without this, comparing a SQLite-loaded datetime against
+    `datetime.now(timezone.utc)` raises `TypeError: can't compare
+    offset-naive and offset-aware datetimes` — caught the hard way, by
+    actually running the account-lockout code path (see Module 10 notes)
+    rather than by reasoning about SQLite's behavior in advance.
+
+    Use this any time a stored datetime is compared against a
+    timezone-aware `datetime.now(timezone.utc)`.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt

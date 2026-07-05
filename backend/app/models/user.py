@@ -13,8 +13,9 @@ SQLite has no equivalent for. The primary key uses UUIDPrimaryKeyMixin
 (backed by app.db.types.GUID), portable the same way.
 """
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Enum, Integer, String
+from sqlalchemy import Boolean, DateTime, Enum, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
@@ -46,6 +47,14 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
     # Account lockout tracking (brute-force protection)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     locked_until: Mapped["datetime | None"] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Profile / settings — deliberately generic (no travel-domain fields).
+    # preferences is a free-form JSON blob (TEXT on SQLite, JSONB on
+    # PostgreSQL/Supabase — see docs/05-database-portability.md) rather
+    # than a rigid column-per-setting schema, so adding a new preference
+    # later doesn't require a migration.
+    avatar_url: Mapped["str | None"] = mapped_column(String(512), nullable=True)
+    preferences: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<User id={self.id} email={self.email} role={self.role}>"

@@ -55,6 +55,17 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     PASSWORD_HASH_SCHEME: str = "argon2"
 
+    # --- Password reset / email verification tokens ---
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
+
+    # --- Email ---
+    EMAIL_PROVIDER: Literal["console"] = "console"
+
+    # --- Avatar upload ---
+    AVATAR_MAX_SIZE_MB: int = 5
+    AVATAR_UPLOAD_DIR: str = "./data/avatars"
+
     # --- CORS ---
     CORS_ALLOWED_ORIGINS: str = "http://localhost:3000"
 

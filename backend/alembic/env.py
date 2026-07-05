@@ -30,6 +30,15 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+if settings.is_sqlite:
+    # The running app's lifespan (main.py) creates this directory, but
+    # Alembic runs standalone — without this, `alembic upgrade head` on a
+    # fresh clone (outside Docker, whose Dockerfile happens to pre-create
+    # /app/data and masks this) fails with "unable to open database
+    # file". Caught by an actual clean-room clone-and-migrate test.
+    db_path = settings.DATABASE_URL_SYNC.split("///")[-1]
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")

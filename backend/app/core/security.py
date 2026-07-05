@@ -23,6 +23,8 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 class TokenType(str, Enum):
     ACCESS = "access"
     REFRESH = "refresh"
+    PASSWORD_RESET = "password_reset"
+    EMAIL_VERIFICATION = "email_verification"
 
 
 class TokenPayload(BaseModel):
@@ -59,16 +61,27 @@ def needs_rehash(hashed_password: str) -> bool:
 
 def _create_token(subject: str, role: str, token_type: TokenType, expires_delta: timedelta) -> str:
     now = datetime.now(timezone.utc)
+    exp = now + expires_delta
     payload = TokenPayload(
         sub=subject,
         role=role,
         type=token_type,
         jti=str(uuid.uuid4()),
         iat=now,
-        exp=now + expires_delta,
+        exp=exp,
     )
-    # model_dump with mode="json" ensures datetimes serialize to ISO/epoch correctly for jose
+    # CRITICAL: exp/iat must be Unix timestamps (integers) per RFC 7519's
+    # NumericDate, not ISO 8601 strings. model_dump(mode="json") produces
+    # ISO strings for datetime fields, which python-jose's decoder
+    # rejects with JWTClaimsError ("iat claim must be an integer") — a
+    # failure that was previously silently swallowed by decode_token's
+    # broad except clause, meaning EVERY token verification failed until
+    # this was caught by actually running the code (see Module 10 notes).
+    # Pydantic's datetime fields parse back from int timestamps
+    # automatically on decode, so only the encode side needs fixing.
     to_encode = payload.model_dump(mode="json")
+    to_encode["iat"] = int(now.timestamp())
+    to_encode["exp"] = int(exp.timestamp())
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -87,6 +100,27 @@ def create_refresh_token(subject: str, role: str) -> str:
         role=role,
         token_type=TokenType.REFRESH,
         expires_delta=timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+
+
+def create_password_reset_token(subject: str, role: str) -> str:
+    """Short-lived, single-purpose token. Deliberately much shorter-lived
+    than a refresh token — a leaked reset link should have a small window
+    of usefulness."""
+    return _create_token(
+        subject=subject,
+        role=role,
+        token_type=TokenType.PASSWORD_RESET,
+        expires_delta=timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+    )
+
+
+def create_email_verification_token(subject: str, role: str) -> str:
+    return _create_token(
+        subject=subject,
+        role=role,
+        token_type=TokenType.EMAIL_VERIFICATION,
+        expires_delta=timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS),
     )
 
 
